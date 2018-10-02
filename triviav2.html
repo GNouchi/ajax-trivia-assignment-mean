@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    
+    <style>
+        .question{ width: 600px; height: 400px; border: 1px solid silver; margin-top: 50px; }
+        h3{text-align: center;}
+        .container{display:inline-block;}
+    </style>
+    
+    <script>
+        var response, current_score = 0;
+
+        $(document).ready(function(){
+            document.getElementById("score").innerHTML = "<h2>Score : "+ current_score +"</h2>";
+
+            $("#send").click(function(){
+                if(response==null){
+                    $.get("https://opentdb.com/api.php?amount=3&category=19&type=multiple", init)
+                    document.getElementById("send").innerHTML = "Reset";
+                }
+// reset
+                else{
+                    current_score = 0;
+                    response=null;
+                    document.getElementById("space1").innerHTML = "";
+                    document.getElementById("score").innerHTML = "<h2>Score : "+ current_score +"</h2>";
+                    $.get("https://opentdb.com/api.php?amount=3&category=19&type=multiple", init)                                   
+                }
+            })
+            
+        }) 
+
+function getQuestion(num){
+    let toappend = response[num], radiolist = "", str = "", selections = [];
+
+        selections = toappend.incorrect_answers;
+        selections.push(toappend.correct_answer);
+        shuffle(selections);
+
+        str += "<div id = '"+num+"'>";
+        str += "<h3>"+toappend.question+"</h3>";
+        str += "<p> Answer: "+toappend.correct_answer+"</p>";
+        str += "<h5>Difficulty: "+ toappend.difficulty +"</h5>";
+
+    for( let i = 0; i < selections.length ; i++ ){
+        radiolist += "<input type='radio' name='"+num+"' value='"+ selections[i]+"' onclick ='check("+num+");'>"+selections[i]+"<br>"; 
+    }
+        str += radiolist;
+        str += "</div>";
+
+    document.getElementById(num).parentElement.innerHTML = str;    
+}
+
+// build stuff initial show blocks here
+function init(data){
+    if (response!=null){
+    return false;
+    }
+    response = data.results;
+// build stuff here
+    $('#space1').append(
+        '<h1>'
+        + response[0].category
+        + '</h1>'
+    );
+
+    for(let i = 0; i < response.length ; i++ ){
+        $('#space1').append('<div name="'+i+'" class ="question"><button id="'+i+'" onclick="getQuestion('+i+')"> '+response[i].difficulty+' </button></div>')
+    }
+}
+
+
+function shuffle(arr){            
+    var len = arr.length, temp, randidx;
+    if( len < 1 ){
+        return false
+    }
+    while( len > 0 ){
+        randidx = Math.floor(Math.random()*len);
+        len--;
+        temp = arr[len];
+        arr[len] = arr[randidx];
+        arr[randidx] = temp;
+    }
+    return arr;
+}
+
+function check(q){   
+// q is the question # in response obj
+    let allinput = document.getElementById(q).getElementsByTagName("input");    
+        console.log("checking question : " + q);    
+    let choices = [];     
+    for (let i = 0; i < allinput.length; i++ ){
+        if(allinput[i].checked){
+            choices.push(allinput[i]);
+        }
+    }
+// block multiple answers
+    if(choices.length !=1){
+        console.log("# choices selected : " + choices);
+        return false;
+    }
+    if( response[q].correct_answer == choices[0].value ){
+        console.log(response[q].correct_answer , ":", choices[0].value, "=" , response[q].correct_answer == choices[0].value);
+        current_score = addscore(current_score,response[q].difficulty);
+        document.getElementById(q).innerHTML = 
+            "<h3> +"
+            + translate(response[q].difficulty)
+            + "<br> answered correctly, You said : "
+            + choices[0].value
+            + "</h3>";
+    }
+    else{
+        console.log("wrong.");        
+        document.getElementById(q).innerHTML = 
+            "<h3> +0 :( <br>Answered incorrectly, You said : "
+            + choices[0].value 
+            + " vs (correct) : "
+            + response[q].correct_answer 
+            + "</h3>";
+    }
+    document.getElementById("score").innerHTML = "<h2>Score : "+ current_score +"</h2>";
+}
+
+function translate(str){
+    if ( str == "hard" ){
+        return 300;
+    }
+    else if ( str == "medium" ){
+        return 200;
+    }
+    else if ( str == "easy" ){
+        return 100;
+    }    
+}
+function addscore(current_score, str){
+    if ( str == "hard" ){
+        return current_score += 300;
+    }
+    else if ( str == "medium" ){
+        return current_score += 200;
+    }
+    else if ( str == "easy" ){
+        return current_score += 100;
+    }
+}
+
+</script>
+
+
+</head>
+<body>
+    <h1>Quiz - needs to be changed to allow for multiple api calls but works well for a single api call atm</h1>
+    <div id="score"></div>    
+    <button id="send" >Start Quiz</button>    
+<br>
+    <div id="space1" class="container" ></div>
+
+
+</body>
+</html>
